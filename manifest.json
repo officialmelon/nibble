@@ -10,7 +10,12 @@
         {
             "matches": ["https://flavortown.hackclub.com/*"],
             "js": ["content.js"],
-            "run_at": "document_start"
+            "run_at": "document_end"
         }
-    ]
+    ],
+    "web_accessible_resources": [{
+        "matches": ["https://flavortown.hackclub.com/*"],
+        "resources": ["images/label.png"]
+  }],
+  "type": "module"
 }
