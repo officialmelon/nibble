@@ -1,6 +1,10 @@
 ### Nibble - AI flagger
 Nibble automatically displays all AI declarations while browsing, so you can see what uses AI without clicking on each individual page.
 
+### Screenshots
+
+![alt text](images/image.png)
+
 ### How to use?
 
 1. Download the repo as a zip file (alternatively download the zip from releases)
@@ -8,6 +12,4 @@ Nibble automatically displays all AI declarations while browsing, so you can see
 3. Go to `chrome://extensions/` in your browser
 4. Enable developer mode
 5. Click on "Load unpacked" and select the extracted folder
-
-
-### This is a w.i.p extension
+6. Go to the [flavortown gallery](https://flavortown.hackclub.com/explore/gallery) and see it in action!
