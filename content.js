@@ -1,124 +1,120 @@
+// Nibble's functionality is extremely simple.
+
+// definitions
+
 let flavorcode_base = "https://flavortown.hackclub.com"
 
-let gallery_pn = "/explore/gallery"
+let gallery_pn = "/explore/gallery";
 
+// get path name
+function retrievePathName() {
+    return console.log(location.pathname);
+}
+
+// are we in the gallery?
+function isOnGallery() {
+    return (location.pathname === gallery_pn)
+}
+
+// get project list
 function returnProjectList() {
     return document.getElementsByClassName("project-card")
 }
 
-function returnExplorePosts() {
-    return document.getElementsByClassName("post__content")
-}
-
+// filter out letter and char and keep num
 function returnProjectId(project) {
-    return project.id.replace(/\D/g, '')
+    return project.id.replace(/\D/g, '');
 }
 
-function returnProjectIdFromExplore(post) {
-    const link = post.querySelector('a[href^="/projects/"]')
-    if (!link) return null
-    const m = link.getAttribute("href").match(/\d+/)
-    return m ? m[0] : null
-}
-
+// returns the frame that holds the ai stuff
 function returnAiDeclarationHeader(customDoc) {
     return customDoc.getElementsByClassName("project-show-card__ai-declaration")[0]
 }
 
-function returnProjectBannerFrame(project) {
+// returns the frame that holds the banner img of each proj
+function returnProjectBannerFrame(project) { // takes in project-card
     return project.getElementsByClassName("project-card__banner-frame")[0]
 }
 
-function returnProjectBannerFrame_explore(post) {
-    return post.querySelector(".post__attachments .post__viewport")
-}
-
+// create img/banner thing
 function createImg(bannerframe, path) {
-    bannerframe.style.position = "relative"
+    bannerframe.style.position = 'relative';
+    
     let img = document.createElement("img")
     img.src = path
-    img.style = "position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:10;pointer-events:none;"
+    img.style = "position: absolute; top: 0; left: 0; width: auto; height: auto; object-fit: cover; z-index: 10;"
     bannerframe.appendChild(img)
     return img
 }
 
+//# API Stuff 
+
 async function getProjectById(id) {
-    const resp = await fetch(`${flavorcode_base}/projects/${id}`, {
-        headers: { "X-Flavortown-Ext-10584": "true" }
-    })
-    if (!resp.ok) return null
-    return await resp.text()
+    try {
+        const resp = await (fetch(`${flavorcode_base}/projects/${id}`, {
+            headers: { "X-Flavortown-Ext-10584": "true" }
+        }))
+        if (!resp.ok) {
+            throw new Error('request to api failed... did you hit the rate limit? xd');
+        }
+        const respd = await resp.text();
+        return respd
+    } catch (error) {
+        console.error("Error?")
+    }
 }
 
-const processedProjects = new Set()
+const processedProjects = new Set();
 
-function processGalleryProject(project) {
-    let project_id = returnProjectId(project)
-    if (!project_id || processedProjects.has(project_id)) return
-    processedProjects.add(project_id)
+function processProject(project) {
+    let project_id = returnProjectId(project);
+    
+    if (processedProjects.has(project_id)) return;
+    processedProjects.add(project_id);
+    
+    console.log(project_id);
+    let bannerframe = returnProjectBannerFrame(project);
+    
+    if (!bannerframe) return;
+    
+    (async () => {
+        const html = await getProjectById(project_id);
+        if (!html) return;
 
-    let bannerframe = returnProjectBannerFrame(project)
-    if (!bannerframe) return
-
-    ;(async () => {
-        const html = await getProjectById(project_id)
-        if (!html) return
-        const dom = new DOMParser().parseFromString(html, "text/html")
+        const dom = new DOMParser().parseFromString(html, "text/html");
         if (returnAiDeclarationHeader(dom)) {
             createImg(bannerframe, chrome.runtime.getURL("images/label.png"))
         }
-    })()
+    })();
 }
 
-function processExplorePost(post) {
-    let project_id = returnProjectIdFromExplore(post)
-    if (!project_id || processedProjects.has(project_id)) return
-    processedProjects.add(project_id)
-
-    let bannerframe = returnProjectBannerFrame_explore(post)
-    if (!bannerframe) return
-
-    ;(async () => {
-        const html = await getProjectById(project_id)
-        if (!html) return
-        const dom = new DOMParser().parseFromString(html, "text/html")
-        if (returnAiDeclarationHeader(dom)) {
-            createImg(bannerframe, chrome.runtime.getURL("images/label.png"))
-        }
-    })()
-}
-
-function processExisting() {
+function processExistingProjects() {
     for (const project of returnProjectList()) {
-        processGalleryProject(project)
-    }
-    for (const post of returnExplorePosts()) {
-        processExplorePost(post)
+        processProject(project);
     }
 }
 
-function observeNew() {
+function observeNewProjects() {
     const observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
             for (const node of mutation.addedNodes) {
-                if (node.nodeType !== 1) continue
-
-                if (node.classList?.contains("project-card")) {
-                    processGalleryProject(node)
+                if (node.nodeType === 1 && node.classList && node.classList.contains('project-card')) {
+                    processProject(node);
                 }
-
-                if (node.classList?.contains("post__content")) {
-                    processExplorePost(node)
+                if (node.nodeType === 1 && node.querySelectorAll) {
+                    const projects = node.querySelectorAll('.project-card');
+                    projects.forEach(processProject);
                 }
-
-                node.querySelectorAll?.(".project-card").forEach(processGalleryProject)
-                node.querySelectorAll?.(".post__content").forEach(processExplorePost)
             }
         }
-    })
-
-    observer.observe(document.body, { childList: true, subtree: true })
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
 }
 
-processExisting()
-observeNew()
+// Main
+processExistingProjects();
+observeNewProjects();

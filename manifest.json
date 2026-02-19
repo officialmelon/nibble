@@ -16,6 +16,5 @@
     "web_accessible_resources": [{
         "matches": ["https://flavortown.hackclub.com/*"],
         "resources": ["images/label.png"]
-  }],
-  "type": "module"
+  }]
 }
